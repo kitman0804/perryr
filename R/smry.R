@@ -22,8 +22,8 @@ smry.numeric <- function(x, qt=c(0, .5, 1), digits = 2, x_name, ...) {
 
   digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
-  class(out) <- c("smry_vec", class(out))
-  attr(out, "x") <- list(name = x_name)
+  class(out) <- c("smry_cts", class(out))
+  attr(out, "x") <- list(name = x_name, levels = NULL)
   attr(out, "format") <- list(digits = digits, printed_names = c("mean", "s.d.", paste0(qt * 100, "% quantile"), "No. of NA"))
   return(out)
 }
@@ -35,15 +35,15 @@ smry.factor <- function(x, digits = 2, x_name, ...) {
 
   out <- data.frame(count = summary(x))
   out$percent <- with(out, count/sum(count) * 100)
-  if ("NA's" %in% names(out$count)) {
-    out$valid_percent <- with(out, c(count[-length(count)]/sum(count[-length(count)]), NA))
+  if ("NA's" %in% rownames(out)) {
+    out$valid_percent <- with(out, c(count[-length(count)]/sum(count[-length(count)]), NA)) * 100
   } else {
     out$valid_percent <- out$percent
   }
 
   digits <- digits[[1]] * c(0, 1, 1)
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
-  class(out) <- c("smry_vec", class(out))
+  class(out) <- c("smry_cat", class(out))
   attr(out, "x") <- list(name = x_name, levels = rownames(out))
   attr(out, "format") <- list(digits = digits, printed_names = c("n", "%", "valid %"))
   return(out)

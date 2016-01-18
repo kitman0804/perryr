@@ -1,28 +1,44 @@
-#================smry_cat================#
-print.smry_vec <- function(obj, ...) {
+#================smry_cts================#
+print.smry_cts <- function(obj, ...) {
   x_name <- attr(obj, "x")$name
   digits <- attr(obj, "format")$digits
   printed_names <- attr(obj, "format")$printed_names
 
   out <- obj
   out[] <- lapply(1:ncol(out), function(i) roundf(out[, i], digits = digits[i], format = TRUE))
-  out[out=="NA"] <- ""
-  class(out) <- "data.frame"
-  cat(x_name, "\n")
-  print(out)
+  out <- rbind(printed_names, do.call(cbind, out))
+  out <- cbind(c("", x_name), out)
+
+  dimnames(out) <- list(rep("", nrow(out)), rep("", ncol(out)))
+  out[grepl("^\\s*NA\\s*$", out)] <- ""
+  print(noquote(out))
 }
 
 
-#================smry_cts================#
-print.smry_cts <- function(obj, ...) {
-  x_name <- attr(obj, "x")$x_name
-  digits <- attr(obj, "digits")
+#================smry_cat================#
+print.smry_cat <- function(obj, ...) {
+  x_name <- attr(obj, "x")$name
+  x_levels <- attr(obj, "x")$levels
+  digits <- attr(obj, "format")$digits
+  printed_names <- attr(obj, "format")$printed_names
 
   out <- obj
-  out <- lapply(out, roundf, digits = digits)
-  out <- do.call(rbind, out)
-  colnames(out) <- ""
-  names(dimnames(out)) <- c(x_name, "")
+  out[] <- lapply(1:ncol(out), function(i) roundf(out[, i], digits = digits[i], format = TRUE))
+  out <- rbind(printed_names, do.call(cbind, out))
+  out <- cbind(c(x_name, x_levels), out)
+
+  dimnames(out) <- list(rep("", nrow(out)), rep("", ncol(out)))
+  out[grepl("^\\s*NA\\s*$", out)] <- ""
+  print(noquote(out))
+}
+
+
+#================smrytable================#
+print.smrytable <- function(obj, ...) {
+  x_name <- attr(obj, "x")$name
+  out <- cbind(names(obj), obj)
+  out <- rbind(c(x_name, ""), out)
+  dimnames(out) <- list(rep("", nrow(out)), rep("", ncol(out)))
   print(noquote(out))
 }
 
@@ -33,6 +49,7 @@ print.get_gof <- function(obj, ...) {
   class(out) <- "matrix"
   print(out)
 }
+
 
 #================get_coef================#
 print.get_coef <- function(obj, ...) {
