@@ -33,6 +33,27 @@ print.smry_cat <- function(obj, ...) {
 }
 
 
+#================smry_cat================#
+print.smry_ls <- function(obj, ...) {
+  x_names <- lapply(obj, function(obj_i) {
+    attr(obj_i, "x")$name
+  })
+  len <- lapply(obj, length)
+  len <- max(unlist(len))
+
+  out <- lapply(obj, function(obj_i) {
+    c(paste0(names(obj_i), " : ", obj_i), rep("", len - length(obj_i)))
+  })
+  out <- do.call(cbind, out)
+  dimnames(out) <- list(rep("", len), x_names)
+  class(out) <- "table"
+
+  print(out)
+}
+
+
+
+
 #================smrytable================#
 print.smrytable <- function(obj, ...) {
   x_name <- attr(obj, "x")$name

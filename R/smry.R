@@ -1,100 +1,176 @@
+#================================================================#
+
+# This function is a generic function to extract important summary of the inputted object 'x'
+
+#================================#
+# S3 class
 smry <- function(x, ...) {
   UseMethod("smry", x)
 }
 
 
-#================default================#
+#================================#
+# default class
+# - summary(x)
 smry.default <- function(x, ...) {
   summary(x)
 }
 
 
-#================numeric================#
-smry.numeric <- function(x, qt=c(0, .5, 1), digits = 2, x_name, ...) {
-  out <- data.frame(
-    mean(x, na.rm = TRUE),
-    sd(x, na.rm = TRUE),
-    as.list(quantile(x, probs = qt, na.rm = TRUE)),
-    sum(is.na(x))
-  )
-  names(out) <- c("mean", "sd", paste0("q", qt * 100), "NA's")
-  rownames(out) <- ""
+#================================#
+# numeric class
+# - mean
+# - sd
+# - no. of missing
+# - quantiles
+smry.numeric <- function(x, qt = c(0.0, 0.5, 1.0), digits = 2, x_name, ...) {
+  # argument checking
+  if (!is.numeric(qt)) stop("'qt' must be numeric")
+  if (sum(qt < 0) > 0 | sum(qt > 1) > 0) stop("'qt' must be value(s) in [0, 1]")
 
-  digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
+  # mean & s.d.
+  out <- data.frame(
+    mean = mean(x, na.rm = TRUE),
+    sd = sd(x, na.rm = TRUE)
+  )
+  # quantile
+  out <- data.frame(
+    out,
+    as.list(quantile(x, probs = qt, na.rm = TRUE))
+  )
+  names(out)[(ncol(out) - length(qt) + 1):ncol(out)] <- paste0("q", qt * 100)
+  # no. of missing
+  out$na <- sum(is.na(x))
+
+  #Assign class and attributes
+  class(out) <- append("smry_cts", class(out))
+  attr(out, "x") <- list()
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
-  class(out) <- c("smry_cts", class(out))
-  attr(out, "x") <- list(name = x_name, levels = NULL)
-  attr(out, "format") <- list(digits = digits, printed_names = c("mean", "s.d.", paste0(qt * 100, "% quantile"), "No. of NA"))
+  attr(out, "x")$name <- x_name
+  attr(out, "x")$levels <- NULL
+
+  attr(out, "format") <- list()
+  digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
+  attr(out, "format")$digits <- digits
+  printed_names <- names(out)
+  printed_names <- gsub("sd", "s.d.", printed_names)
+  printed_names <- gsub("q([0-9]+)", "\\1\\% quantile", printed_names)
+  printed_names <- gsub("na", "No. of NA's", printed_names)
+  attr(out, "format")$printed_names <- printed_names
   return(out)
 }
 
 
-#================factor================#
+#================================#
+# factor
+# - count
+# - percentage
+# - valid percentage (percentage after excluding NA)
+
 smry.factor <- function(x, digits = 2, x_name, ...) {
   x <- droplevels(x)
 
-  out <- data.frame(count = summary(x))
-  out$percent <- with(out, count/sum(count) * 100)
+  # count & percentage
+  out <- data.frame(
+    count = summary(x),
+    percent <- with(out, count/sum(count) * 100)
+  )
+  # valid percentage
   if ("NA's" %in% rownames(out)) {
     out$valid_percent <- with(out, c(count[-length(count)]/sum(count[-length(count)]), NA)) * 100
   } else {
     out$valid_percent <- out$percent
   }
 
-  digits <- digits[[1]] * c(0, 1, 1)
+  #Assign class and attributes
+  class(out) <- append("smry_cat", class(out))
+  attr(out, "x") <- list()
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
-  class(out) <- c("smry_cat", class(out))
-  attr(out, "x") <- list(name = x_name, levels = rownames(out))
-  attr(out, "format") <- list(digits = digits, printed_names = c("n", "%", "valid %"))
+  attr(out, "x")$name <- x_name
+  attr(out, "x")$levels <- rownames(out)
+
+  attr(out, "format") <- list()
+  digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
+  attr(out, "format")$digits <- digits
+  printed_names <- names(out)
+  printed_names <- gsub("percent", "\\%", printed_names)
+  printed_names <- gsub("_", "\\s", printed_names)
+  attr(out, "format")$printed_names <- printed_names
   return(out)
 }
 
 
-#================character================#
+#================================#
+# character
+# - (Same as factor)
 smry.character <- function(x, x_name, ...) {
-  x <- factor(x, exclude = NULL)
+  # Covert 'x' to factor
+  x <- factor(x)
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
+
+  # smry
   smry.factor(x, x_name = x_name, ...)
 }
 
 
-#================integer================#
+#================================#
+# integer
+# - (Same as factor)
 smry.integer <- function(x, x_name, ...) {
-  x <- factor(x, exclude = NULL)
+  # Covert 'x' to factor
+  x <- factor(x)
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
+
+  # smry
   smry.factor(x, x_name = x_name, ...)
 }
 
 
-#================lm================#
+#================================#
+# lm
+# - coefficients
+# - goodness of fit summary
 smry.lm <- function(x, ...) {
   out <- list(call = x$call, coef = get_coef(x, ...), gof = get_gof(x, ...))
+
+  # Assign class
   class(out) <- append("smry_mod", class(out))
   return(out)
 }
 
 
-#================glm================#
+#================================#
+# glm
+# - coefficients
+# - goodness of fit summary
 smry.glm <- function(x, ...) {
   out <- list(call = x$call, coef = get_coef(x, ...), gof = get_gof(x, ...))
+
+  # Assign class
   class(out) <- append("smry_mod", class(out))
   return(out)
 }
 
 
-#================coxph================#
+#================================#
+# coxph
+# - coefficients
+# - goodness of fit summary
 smry.coxph<- function(x, ...) {
   out <- list(call = x$call, coef = get_coef(x, ...), gof = get_gof(x, ...))
+
+  # Assign class
   class(out) <- append("smry_mod", class(out))
   return(out)
 }
 
 
-#================survfit================#
+#================================#
+# survfit
 smry.survfit <- function(x, ...) {
-
   out <- x
 
+  # Assign class
   class(out) <- "smry_survfit"
   return(out)
 }
@@ -107,10 +183,12 @@ smry.survfit <- function(x, ...) {
 smry.list <- function(x, ...) {
   vnames <- names(x)
   out <- lapply(vnames, function(v) {
-    with(x, smry(x[[v]], ..., x_name = v))
+    smry(x[[v]], ..., x_name = v)
   })
   names(out) <- vnames
-  class(out) <- "smry_ls"
+
+  # Assign class
+  class(out) <- append("smry_ls", class(out))
   return(out)
 }
 
@@ -119,9 +197,11 @@ smry.list <- function(x, ...) {
 smry.data.frame <- function(x, ...) {
   vnames <- names(x)
   out <- lapply(vnames, function(v) {
-    with(x, smry(x[, v], ..., x_name = v))
+    smry(x[[v]], ..., x_name = v)
   })
   names(out) <- vnames
-  class(out) <- "smry_ls"
+
+  # Assign class
+  class(out) <- append("smry_ls", class(out))
   return(out)
 }
