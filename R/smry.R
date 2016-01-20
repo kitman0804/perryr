@@ -72,9 +72,9 @@ smry.factor <- function(x, digits = 2, x_name, ...) {
 
   # count & percentage
   out <- data.frame(
-    count = summary(x),
-    percent <- with(out, count/sum(count) * 100)
+    count = summary(x)
   )
+  out$percent <- with(out, count/sum(count) * 100)
   # valid percentage
   if ("NA's" %in% rownames(out)) {
     out$valid_percent <- with(out, c(count[-length(count)]/sum(count[-length(count)]), NA)) * 100
