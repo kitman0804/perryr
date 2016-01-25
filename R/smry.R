@@ -160,6 +160,19 @@ smry.integer <- function(x, x_name, ...) {
 
 
 #================================#
+# logical
+# - (Same as factor)
+smry.logical <- function(x, x_name, ...) {
+  # Covert 'x' to factor
+  x <- factor(x)
+  x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
+
+  # smry
+  smry.factor(x, x_name = x_name, ...)
+}
+
+
+#================================#
 # lm
 # - coefficients
 # - goodness of fit summary
@@ -170,6 +183,7 @@ smry.lm <- function(x, ...) {
   class(out) <- append("smry_mod", class(out))
   return(out)
 }
+
 
 print.smry_mod <- function(obj, ...) {
   print_line <- function(chr, length) cat(rep(chr, length), "\n", sep = "")

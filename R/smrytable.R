@@ -5,6 +5,7 @@ smrytable <- function(x, ...) {
   UseMethod("smrytable", x)
 }
 
+
 #================================#
 # printed format
 print.smrytable <- function(obj, ...) {
@@ -14,6 +15,7 @@ print.smrytable <- function(obj, ...) {
   dimnames(out) <- list(rep("", nrow(out)), rep("", ncol(out)))
   print(noquote(out))
 }
+
 
 #================================#
 # numeric
@@ -47,6 +49,7 @@ smrytable.numeric <- function(x, by_vrbs, x_name, ...) {
   return(out)
 }
 
+
 #================================#
 # factor
 smrytable.factor <- function(x, by_vrbs, x_name, ...) {
@@ -78,11 +81,13 @@ smrytable.factor <- function(x, by_vrbs, x_name, ...) {
   return(out)
 }
 
+
 #================================#
 # character
 smrytable.character <- function(x, ...) {
   smrytable.factor(x, ...)
 }
+
 
 #================================#
 # integer
@@ -90,14 +95,26 @@ smrytable.integer <- function(x, ...) {
   smrytable.factor(x, ...)
 }
 
+
+#================================#
+# logical
+smrytable.logical <- function(x, ...) {
+  smrytable.factor(x, ...)
+}
+
+
 #================================#
 # data.frame
 smrytable.data.frame <- function(x, by_vrbs, na, ...) {
-  if (is.character(by_vrbs)) {
-    by_vrbs <- x[, by_vrbs, drop = FALSE]
-    x <- x[, !(names(x) %in% names(by_vrbs))]
+  if (missing(by_vrbs)) {
+    out <- lapply(x, smrytable, ...)
+  } else {
+    if (is.character(by_vrbs)) {
+      by_vrbs <- x[, by_vrbs, drop = FALSE]
+      x <- x[, !(names(x) %in% names(by_vrbs))]
+    }
+    out <- lapply(x, smrytable, by_vrbs = by_vrbs, ...)
   }
-  out <- lapply(x, smrytable, by_vrbs = by_vrbs, ...)
   out[] <- lapply(1:length(out), function(i) {
     rbind(c(names(out)[i], rep("", ncol(out[[i]]) - 1)), out[[i]])
   })

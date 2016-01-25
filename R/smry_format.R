@@ -7,6 +7,7 @@ smry_format <- function(x, ...) {
   UseMethod("smry_format", x)
 }
 
+
 #================================#
 # default
 smry_format.default <- function(x) {
