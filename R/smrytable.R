@@ -29,11 +29,11 @@ smrytable.numeric <- function(x, by_vrbs, x_name, ...) {
     } else if (is.matrix(by_vrbs) | is.data.frame(by_vrbs)) {
       if (length(x) != nrow(by_vrbs)) stop("")
     } else {
-      stop("'by_vrbs' must be a vector, matrix or data.frame")
+      stop("'by_vrbs' must be a vector, factor, matrix or data.frame")
     }
     tmpdf <- data.frame(x = x, by_vrbs)
     smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d) smry(d$x), ...)
-    cnames <- c(cnames, unlist(attr(smry_by, "split_labels")))
+    cnames <- c(cnames, as.character(unlist(attr(smry_by, "split_labels"))))
     smry_x <- c(smry_x, smry_by)
   }
   out <- lapply(smry_x, smry_format, format = "mean (sd)")
@@ -42,6 +42,7 @@ smrytable.numeric <- function(x, by_vrbs, x_name, ...) {
     return(out[[i]])
   })
   out <- Reduce(function(...) merge(..., by = "label", all = TRUE), out)
+  out$label[is.na(out$label)] <- "mean (sd)"
   out <- noquote(out)
   return(out)
 }
@@ -60,11 +61,11 @@ smrytable.factor <- function(x, by_vrbs, x_name, ...) {
     } else if (is.matrix(by_vrbs) | is.data.frame(by_vrbs)) {
       if (length(x) != nrow(by_vrbs)) stop("")
     } else {
-      stop("'by_vrbs' must be a vector, matrix or data.frame")
+      stop("'by_vrbs' must be a vector, factor, matrix or data.frame")
     }
     tmpdf <- data.frame(x = x, by_vrbs)
     smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d) smry(d$x), ...)
-    cnames <- c(cnames, unlist(attr(smry_by, "split_labels")))
+    cnames <- c(cnames, as.character(unlist(attr(smry_by, "split_labels"))))
     smry_x <- c(smry_x, smry_by)
   }
   out <- lapply(smry_x, smry_format, format = "count (percent)")
@@ -88,3 +89,23 @@ smrytable.character <- function(x, ...) {
 smrytable.integer <- function(x, ...) {
   smrytable.factor(x, ...)
 }
+
+#================================#
+# data.frame
+smrytable.data.frame <- function(x, by_vrbs, na, ...) {
+  if (is.character(by_vrbs)) {
+    by_vrbs <- x[, by_vrbs, drop = FALSE]
+    x <- x[, !(names(x) %in% names(by_vrbs))]
+  }
+  out <- lapply(x, smrytable, by_vrbs = by_vrbs, ...)
+  out[] <- lapply(1:length(out), function(i) {
+    rbind(c(names(out)[i], rep("", ncol(out[[i]]) - 1)), out[[i]])
+  })
+  out <- do.call(rbind, out)
+  out[is.na(out)] <- ifelse(missing(na), "", na)
+  row.names(out) <- NULL
+  return(out)
+}
+
+
+

@@ -16,10 +16,12 @@ smry_format.default <- function(x) {
 
 #================================#
 # data.frame
-smry_format.data.frame <- function(x, format) {
+smry_format.data.frame <- function(x, format, digits) {
   x <- x
-  attrs <- attributes(x)
-  x[] <- lapply(1:ncol(x), function(i) roundf(x[, i], digits = attrs$format$digits[i], format = TRUE))
+  if (missing(digits)) {
+    attrs <- attributes(x)
+    x[] <- lapply(1:ncol(x), function(i) roundf(x[, i], digits = attrs$format$digits[i], format = TRUE))
+  }
 
   selected <- sapply(names(x), grepl, x = format)
   selected <- names(x)[selected]
@@ -32,8 +34,8 @@ smry_format.data.frame <- function(x, format) {
     }
     return(txt)
   })
-  out <- cbind(label = attrs$row.names, out)
-  out <- as.data.frame(out)
+  out <- cbind(label = attrs$x$levels, out)
+  out <- as.data.frame(out, stringsAsFactors = FALSE)
   return(out)
 }
 
