@@ -3,6 +3,12 @@ get_gof <- function(mod, ...) {
   UseMethod("get_gof", mod)
 }
 
+print.get_gof <- function(obj, ...) {
+  out <- matrix(unlist(obj), ncol = 1, dimnames = list(attr(obj, "print_names"), ""))
+  class(out) <- "matrix"
+  print(out)
+}
+
 
 #========lm========#
 get_gof.lm <- function(mod, ...) {

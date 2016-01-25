@@ -4,6 +4,16 @@ get_coef <- function(mod, ...) {
   UseMethod("get_coef", mod)
 }
 
+print.get_coef <- function(obj, ...) {
+  coef <- obj$coef
+  dispersion <- obj$dispersion
+  names(coef) <- attr(coef, "print_names")
+  class(coef) <- "data.frame"
+  print(coef)
+  cat(rep("-", 2^2), "\n", sep = "")
+  cat("SIG. CODES: *** p < 0.001, ** p < 0.01, * p < 0.05 \n\n")
+  cat(names(dispersion), ":", dispersion[[1]], "\n")
+}
 
 #================lm================#
 get_coef.lm <- function(mod, ci_lvl = 0.95, add_ref = FALSE, trans_fun = identity, ...) {
