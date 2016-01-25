@@ -24,11 +24,9 @@ smrytable.numeric <- function(x, by_vrbs, x_name, ...) {
   smry_x <- list(all = smry(x, x_name = x_name, ...))
   if (!missing(by_vrbs)) {
     # argument checking (x & by_vrbs)
-    if (is.vector(by_vrbs)) {
+    if (is.vector(by_vrbs) | is.factor(by_vrbs)) {
       if (length(x) != length(by_vrbs)) stop("")
-    } else if (is.matrix(by_vrbs)) {
-      if (length(x) != nrow(by_vrbs)) stop("")
-    } else if (is.data.frame(by_vrbs)) {
+    } else if (is.matrix(by_vrbs) | is.data.frame(by_vrbs)) {
       if (length(x) != nrow(by_vrbs)) stop("")
     } else {
       stop("'by_vrbs' must be a vector, matrix or data.frame")
@@ -57,11 +55,9 @@ smrytable.factor <- function(x, by_vrbs, x_name, ...) {
   smry_x <- list(smry(x, x_name = x_name, ...))
   if (!missing(by_vrbs)) {
     # argument checking (x & by_vrbs)
-    if (is.vector(by_vrbs)) {
+    if (is.vector(by_vrbs) | is.factor(by_vrbs)) {
       if (length(x) != length(by_vrbs)) stop("")
-    } else if (is.matrix(by_vrbs)) {
-      if (length(x) != nrow(by_vrbs)) stop("")
-    } else if (is.data.frame(by_vrbs)) {
+    } else if (is.matrix(by_vrbs) | is.data.frame(by_vrbs)) {
       if (length(x) != nrow(by_vrbs)) stop("")
     } else {
       stop("'by_vrbs' must be a vector, matrix or data.frame")
