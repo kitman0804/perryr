@@ -47,7 +47,7 @@ smry.numeric <- function(x, qt = c(0.0, 0.5, 1.0), digits = 2, x_name, ...) {
   attr(out, "x") <- list()
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
   attr(out, "x")$name <- x_name
-  attr(out, "x")$levels <- NULL
+  attr(out, "x")$levels <- NA
 
   attr(out, "format") <- list()
   digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
