@@ -19,7 +19,7 @@ print.smrytable <- function(obj, ...) {
 
 #================================#
 # numeric
-smrytable.numeric <- function(x, by_vrbs, x_name, ...) {
+smrytable.numeric <- function(x, by_vrbs, format = "mean (sd)", x_name, ...) {
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
 
   cnames <- c("all")
@@ -34,17 +34,19 @@ smrytable.numeric <- function(x, by_vrbs, x_name, ...) {
       stop("'by_vrbs' must be a vector, factor, matrix or data.frame")
     }
     tmpdf <- data.frame(x = x, by_vrbs)
-    smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d) smry(d$x), ...)
+    smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d, x_name = x_name, ...) {
+      smry(d$x, ...)
+    })
     cnames <- c(cnames, as.character(unlist(attr(smry_by, "split_labels"))))
     smry_x <- c(smry_x, smry_by)
   }
-  out <- lapply(smry_x, smry_format, format = "mean (sd)")
-  out[] <- lapply(1:length(cnames), function(i) {
-    colnames(out[[i]])[2] <- cnames[i]
-    return(out[[i]])
+  out <- lapply(1:length(smry_x), function(i) {
+    s <- smry_x[[i]]
+    tbl <- report_table(s, format, digits = attr(s, "format")$digits, header = cnames[i])
+    tbl <- cbind(value = "mean (sd)", tbl)
+    return(tbl)
   })
-  out <- Reduce(function(...) merge(..., by = "label", all = TRUE), out)
-  out$label[is.na(out$label)] <- "mean (sd)"
+  out <- Reduce(function(...) merge(..., by = "value", all = TRUE), out)
   out <- noquote(out)
   return(out)
 }
@@ -52,7 +54,7 @@ smrytable.numeric <- function(x, by_vrbs, x_name, ...) {
 
 #================================#
 # factor
-smrytable.factor <- function(x, by_vrbs, x_name, ...) {
+smrytable.factor <- function(x, by_vrbs, format = "count (percent)", x_name, ...) {
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
 
   cnames <- c("all")
@@ -67,16 +69,19 @@ smrytable.factor <- function(x, by_vrbs, x_name, ...) {
       stop("'by_vrbs' must be a vector, factor, matrix or data.frame")
     }
     tmpdf <- data.frame(x = x, by_vrbs)
-    smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d) smry(d$x), ...)
+    smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d, x_name = x_name, ...) {
+      smry(d$x, ...)
+    })
     cnames <- c(cnames, as.character(unlist(attr(smry_by, "split_labels"))))
     smry_x <- c(smry_x, smry_by)
   }
-  out <- lapply(smry_x, smry_format, format = "count (percent)")
-  out[] <- lapply(1:length(cnames), function(i) {
-    colnames(out[[i]])[2] <- cnames[i]
-    return(out[[i]])
+  out <- lapply(1:length(cnames), function(i) {
+    s <- smry_x[[i]]
+    tbl <- report_table(s, format = format, digits = attr(s, "format")$digits, header = cnames[i])
+    tbl <- cbind(value = substr(attr(s, "x")$levels, 1, 50), tbl)
+    return(tbl)
   })
-  out <- Reduce(function(...) merge(..., by = "label", all = TRUE), out)
+  out <- Reduce(function(...) merge(..., by = "value", all = TRUE), out)
   out <- noquote(out)
   return(out)
 }

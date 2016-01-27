@@ -110,7 +110,7 @@ smry.factor <- function(x, digits = 2, x_name, ...) {
   attr(out, "format")$digits <- digits
   printed_names <- names(out)
   printed_names <- gsub("percent", "\\%", printed_names)
-  printed_names <- gsub("_", "\\s", printed_names)
+  printed_names <- gsub("_", " ", printed_names)
   attr(out, "format")$printed_names <- printed_names
   return(out)
 }
