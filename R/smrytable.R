@@ -19,7 +19,7 @@ print.smrytable <- function(obj, ...) {
 
 #================================#
 # numeric
-smrytable.numeric <- function(x, by_vrbs, format = "mean (sd)", x_name, ...) {
+smrytable.numeric <- function(x, by_vrbs, format = "mean (sd)", x_name, na = "", ...) {
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
 
   cnames <- c("all")
@@ -37,24 +37,27 @@ smrytable.numeric <- function(x, by_vrbs, format = "mean (sd)", x_name, ...) {
     smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d, x_name = x_name, ...) {
       smry(d$x, ...)
     })
-    cnames <- c(cnames, as.character(unlist(attr(smry_by, "split_labels"))))
+    cnames <- c(cnames, names(smry_by))
     smry_x <- c(smry_x, smry_by)
   }
+
   out <- lapply(1:length(smry_x), function(i) {
     s <- smry_x[[i]]
     tbl <- report_table(s, format, digits = attr(s, "format")$digits, header = cnames[i])
-    tbl <- cbind(value = "mean (sd)", tbl)
+    tbl <- cbind("mean (sd)", tbl)
+    colnames(tbl)[1] <- x_name
     return(tbl)
   })
-  out <- Reduce(function(...) merge(..., by = "value", all = TRUE), out)
-  out <- noquote(out)
+  out <- Reduce(function(...) merge(..., by = x_name, all = TRUE), out)
+  out[] <- lapply(out, as.character)
+  out[is.na(out)] <- na
   return(out)
 }
 
 
 #================================#
 # factor
-smrytable.factor <- function(x, by_vrbs, format = "count (percent)", x_name, ...) {
+smrytable.factor <- function(x, by_vrbs, format = "count (percent)", x_name, na = "", ...) {
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
 
   cnames <- c("all")
@@ -72,17 +75,20 @@ smrytable.factor <- function(x, by_vrbs, format = "count (percent)", x_name, ...
     smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d, x_name = x_name, ...) {
       smry(d$x, ...)
     })
-    cnames <- c(cnames, as.character(unlist(attr(smry_by, "split_labels"))))
+    cnames <- c(cnames, names(smry_by))
     smry_x <- c(smry_x, smry_by)
   }
+
   out <- lapply(1:length(cnames), function(i) {
     s <- smry_x[[i]]
     tbl <- report_table(s, format = format, digits = attr(s, "format")$digits, header = cnames[i])
-    tbl <- cbind(value = substr(attr(s, "x")$levels, 1, 50), tbl)
+    tbl <- cbind(substr(attr(s, "x")$levels, 1, 50), tbl)
+    colnames(tbl)[1] <- x_name
     return(tbl)
   })
-  out <- Reduce(function(...) merge(..., by = "value", all = TRUE), out)
-  out <- noquote(out)
+  out <- Reduce(function(...) merge(..., by = x_name, all = TRUE), out)
+  out[] <- lapply(out, as.character)
+  out[is.na(out)] <- na
   return(out)
 }
 
