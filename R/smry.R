@@ -88,11 +88,11 @@ smry.factor <- function(x, digits = 2, x_name, ...) {
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
 
   # frequency & percentage
-  freq <- table(x)
+  freq <- summary(x)
   out <- data.frame(
     variable = c(x_name, rep("", length(freq) - 1)),
     level = ifelse(nchar(names(freq))<=60, names(freq), paste0(substr(names(freq), 1, 60), " ...")),
-    freq = as.numeric(freq)
+    freq = freq
   )
   out$freq <- summary(x)
   out$percent <- with(out, freq/sum(freq) * 100)
