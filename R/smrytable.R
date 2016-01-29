@@ -34,8 +34,8 @@ smrytable.numeric <- function(x, by_vrbs, format = "mean (sd)", x_name, na = "",
       stop("'by_vrbs' must be a vector, factor, matrix or data.frame")
     }
     tmpdf <- data.frame(x = x, by_vrbs)
-    smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d, x_name = x_name, ...) {
-      smry(d$x, ...)
+    smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d, ...) {
+      smry(d$x, x_name = x_name, ...)
     })
     cnames <- c(cnames, names(smry_by))
     smry_x <- c(smry_x, smry_by)
@@ -44,11 +44,14 @@ smrytable.numeric <- function(x, by_vrbs, format = "mean (sd)", x_name, na = "",
   out <- lapply(1:length(smry_x), function(i) {
     s <- smry_x[[i]]
     tbl <- report_table(s, format, digits = attr(s, "format")$digits, header = cnames[i])
-    tbl <- cbind("mean (sd)", tbl)
-    colnames(tbl)[1] <- x_name
+    tbl <- data.frame(variable = "mean (sd)", tbl, stringsAsFactors = FALSE)
+    vrb_name <- data.frame(s$variable[[1]], rep("", ncol(tbl) - 1), stringsAsFactors = FALSE)
+    names(vrb_name) <- names(tbl)
+    tbl <- rbind(vrb_name, tbl)
+    colnames(tbl)[1] <- "variable"
     return(tbl)
   })
-  out <- Reduce(function(...) merge(..., by = x_name, all = TRUE), out)
+  out <- Reduce(function(...) merge(..., by = "variable", all = TRUE, sort = FALSE), out)
   out[] <- lapply(out, as.character)
   out[is.na(out)] <- na
   return(out)
@@ -57,7 +60,7 @@ smrytable.numeric <- function(x, by_vrbs, format = "mean (sd)", x_name, na = "",
 
 #================================#
 # factor
-smrytable.factor <- function(x, by_vrbs, format = "count (percent)", x_name, na = "", ...) {
+smrytable.factor <- function(x, by_vrbs, format = "freq (valid_percent)", x_name, na = "", ...) {
   x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
 
   cnames <- c("all")
@@ -72,8 +75,8 @@ smrytable.factor <- function(x, by_vrbs, format = "count (percent)", x_name, na 
       stop("'by_vrbs' must be a vector, factor, matrix or data.frame")
     }
     tmpdf <- data.frame(x = x, by_vrbs)
-    smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d, x_name = x_name, ...) {
-      smry(d$x, ...)
+    smry_by <- dlply(tmpdf, .variables = names(tmpdf)[-1], function(d, ...) {
+      smry(d$x, x_name = x_name, ...)
     })
     cnames <- c(cnames, names(smry_by))
     smry_x <- c(smry_x, smry_by)
@@ -82,11 +85,13 @@ smrytable.factor <- function(x, by_vrbs, format = "count (percent)", x_name, na 
   out <- lapply(1:length(cnames), function(i) {
     s <- smry_x[[i]]
     tbl <- report_table(s, format = format, digits = attr(s, "format")$digits, header = cnames[i])
-    tbl <- cbind(substr(attr(s, "x")$levels, 1, 50), tbl)
-    colnames(tbl)[1] <- x_name
+    tbl <- data.frame(variable = s$level, tbl, stringsAsFactors = FALSE)
+    vrb_name <- data.frame(s$variable[[1]], rep("", ncol(tbl) - 1), stringsAsFactors = FALSE)
+    names(vrb_name) <- names(tbl)
+    tbl <- rbind(vrb_name, tbl)
     return(tbl)
   })
-  out <- Reduce(function(...) merge(..., by = x_name, all = TRUE), out)
+  out <- Reduce(function(...) merge(..., by = "variable", all = TRUE, sort = FALSE), out)
   out[] <- lapply(out, as.character)
   out[is.na(out)] <- na
   return(out)
@@ -118,16 +123,20 @@ smrytable.logical <- function(x, ...) {
 # data.frame
 smrytable.data.frame <- function(x, by_vrbs, na, ...) {
   if (missing(by_vrbs)) {
-    out <- lapply(x, smrytable, ...)
+    out <- lapply(1:length(x), function(i, ...) {
+      smrytable(x[[i]], x_name = names(x)[i])
+    })
   } else {
     if (is.character(by_vrbs)) {
       by_vrbs <- x[, by_vrbs, drop = FALSE]
       x <- x[, !(names(x) %in% names(by_vrbs))]
     }
-    out <- lapply(x, smrytable, by_vrbs = by_vrbs, ...)
+    out <- lapply(1:length(x), function(i, ...) {
+      smrytable(x[[i]], by_vrbs = by_vrbs, x_name = names(x)[i])
+    })
   }
   out[] <- lapply(1:length(out), function(i) {
-    rbind(c(names(out)[i], rep("", ncol(out[[i]]) - 1)), out[[i]])
+    rbind(out[[i]], "")
   })
   out <- do.call(rbind, out)
   out[is.na(out)] <- ifelse(missing(na), "", na)

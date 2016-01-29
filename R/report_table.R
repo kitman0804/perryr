@@ -17,7 +17,7 @@ report_table.default <- function(x) {
 
 #================================#
 # data.frame
-report_table.data.frame <- function(x, format, digits = 1, header) {
+report_table.data.frame <- function(x, format, digits = 1, header, row.names = TRUE) {
   # argument
   if (missing(format)) {
     format <- names(x)
@@ -49,8 +49,22 @@ report_table.data.frame <- function(x, format, digits = 1, header) {
       }
     }
   }
-  colnames(out) <- header
+  if (is.logical(row.names)) {
+    if (row.names==TRUE) {
+      rnames <- rownames(x)
+    } else {
+      rnames <- rep("", nrow(out))
+    }
+  }
+  dimnames(out) <- list(rnames, header)
   out <- as.data.frame(out, stringsAsFactors = FALSE)
   return(out)
 }
 
+#================================#
+# matrix
+report_table.matrix <- function(x, ...) {
+  x_df <- as.data.frame(x, stringsAsFactors = FALSE)
+  names(x_df) <- colnames(x)
+  report_table(x_df, ...)
+}

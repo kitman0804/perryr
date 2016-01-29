@@ -12,6 +12,7 @@ smry <- function(x, ...) {
 #================================#
 # default class
 # - summary(x)
+
 smry.default <- function(x, ...) {
   summary(x)
 }
@@ -23,13 +24,16 @@ smry.default <- function(x, ...) {
 # - sd
 # - no. of missing
 # - quantiles
+
 smry.numeric <- function(x, qt = c(0.0, 0.5, 1.0), digits = 2, x_name, ...) {
   # argument checking
   if (!is.numeric(qt)) stop("'qt' must be numeric")
   if (sum(qt < 0) > 0 | sum(qt > 1) > 0) stop("'qt' must be value(s) in [0, 1]")
+  x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
 
   # mean & s.d.
   out <- data.frame(
+    variable = x_name,
     mean = mean(x, na.rm = TRUE),
     sd = sd(x, na.rm = TRUE)
   )
@@ -45,13 +49,11 @@ smry.numeric <- function(x, qt = c(0.0, 0.5, 1.0), digits = 2, x_name, ...) {
   #Assign class and attributes
   class(out) <- append("smry_cts", class(out))
   attr(out, "x") <- list()
-  x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
   attr(out, "x")$name <- x_name
   attr(out, "x")$levels <- NA
 
   attr(out, "format") <- list()
-  digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
-  attr(out, "format")$digits <- digits
+  attr(out, "format")$digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
   printed_names <- names(out)
   printed_names <- gsub("sd", "s.d.", printed_names)
   printed_names <- gsub("q([0-9]+)", "\\1\\% quantile", printed_names)
@@ -68,9 +70,7 @@ print.smry_cts <- function(obj, ...) {
 
   out <- obj
   out[] <- lapply(1:ncol(out), function(i) roundf(out[, i], digits = digits[i], format = TRUE))
-  out <- rbind(printed_names, do.call(cbind, out))
-  out <- cbind(c("", x_name), out)
-
+  out <- rbind(printed_names, as.matrix(out))
   dimnames(out) <- list(rep("", nrow(out)), rep("", ncol(out)))
   out[grepl("^\\s*NA\\s*$", out)] <- ""
   print(noquote(out))
@@ -85,15 +85,20 @@ print.smry_cts <- function(obj, ...) {
 
 smry.factor <- function(x, digits = 2, x_name, ...) {
   x <- droplevels(x)
+  x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
 
-  # count & percentage
+  # frequency & percentage
+  freq <- table(x)
   out <- data.frame(
-    count = summary(x)
+    variable = c(x_name, rep("", length(freq) - 1)),
+    level = ifelse(nchar(names(freq))<=60, names(freq), paste0(substr(names(freq), 1, 60), " ...")),
+    freq = as.numeric(freq)
   )
-  out$percent <- with(out, count/sum(count) * 100)
+  out$freq <- summary(x)
+  out$percent <- with(out, freq/sum(freq) * 100)
   # valid percentage
   if ("NA's" %in% rownames(out)) {
-    out$valid_percent <- with(out, c(count[-length(count)]/sum(count[-length(count)]), NA)) * 100
+    out$valid_percent <- with(out, c(freq[-length(freq)]/sum(freq[-length(freq)]), NA)) * 100
   } else {
     out$valid_percent <- out$percent
   }
@@ -101,14 +106,13 @@ smry.factor <- function(x, digits = 2, x_name, ...) {
   #Assign class and attributes
   class(out) <- append("smry_cat", class(out))
   attr(out, "x") <- list()
-  x_name <- ifelse(missing(x_name), deparse(as.list(match.call())$x), x_name)
   attr(out, "x")$name <- x_name
   attr(out, "x")$levels <- rownames(out)
 
   attr(out, "format") <- list()
-  digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
-  attr(out, "format")$digits <- digits
+  attr(out, "format")$digits <- digits[[1]] * c(rep(0, 3), rep(1, ncol(out) - 3))
   printed_names <- names(out)
+  printed_names <- gsub("freq", "n", printed_names)
   printed_names <- gsub("percent", "\\%", printed_names)
   printed_names <- gsub("_", " ", printed_names)
   attr(out, "format")$printed_names <- printed_names
@@ -124,9 +128,7 @@ print.smry_cat <- function(obj, ...) {
 
   out <- obj
   out[] <- lapply(1:ncol(out), function(i) roundf(out[, i], digits = digits[i], format = TRUE))
-  out <- rbind(printed_names, do.call(cbind, out))
-  out <- cbind(c(x_name, x_levels), out)
-
+  out <- rbind(printed_names, as.matrix(out))
   dimnames(out) <- list(rep("", nrow(out)), rep("", ncol(out)))
   out[grepl("^\\s*NA\\s*$", out)] <- ""
   print(noquote(out))
