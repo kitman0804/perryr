@@ -1,8 +1,8 @@
 #================================================================#
 
-# This function is a generic function to extract important summary of the inputted object 'x'
+# This function is a generic function to extract important summary of the input 'x'
 
-#================================#
+#================================================================#
 # S3 class
 smry <- function(x, ...) {
   UseMethod("smry", x)
@@ -46,35 +46,17 @@ smry.numeric <- function(x, qt = c(0.0, 0.5, 1.0), digits = 2, x_name, ...) {
   # no. of missing
   out$na <- sum(is.na(x))
 
-  #Assign class and attributes
-  class(out) <- append("smry_cts", class(out))
-  attr(out, "x") <- list()
-  attr(out, "x")$name <- x_name
-  attr(out, "x")$levels <- NA
-
-  attr(out, "format") <- list()
-  attr(out, "format")$digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
+  # output
+  digits <- digits[[1]] * c(rep(1, ncol(out) - 1), 0)
   printed_names <- names(out)
   printed_names <- gsub("sd", "s.d.", printed_names)
   printed_names <- gsub("q([0-9]+)", "\\1\\% quantile", printed_names)
   printed_names <- gsub("na", "No. of NA's", printed_names)
-  attr(out, "format")$printed_names <- printed_names
+  out <- format_df(out, printed_names = list(NULL, printed_names), digits = digits)
   return(out)
 }
 
-# printed format
-print.smry_cts <- function(obj, ...) {
-  x_name <- attr(obj, "x")$name
-  digits <- attr(obj, "format")$digits
-  printed_names <- attr(obj, "format")$printed_names
 
-  out <- obj
-  out[] <- lapply(1:ncol(out), function(i) roundf(out[, i], digits = digits[i], format = TRUE))
-  out <- rbind(printed_names, as.matrix(out))
-  dimnames(out) <- list(rep("", nrow(out)), rep("", ncol(out)))
-  out[grepl("^\\s*NA\\s*$", out)] <- ""
-  print(noquote(out))
-}
 
 
 #================================#
@@ -91,7 +73,7 @@ smry.factor <- function(x, digits = 2, x_name, ...) {
   freq <- summary(x)
   out <- data.frame(
     variable = c(x_name, rep("", length(freq) - 1)),
-    level = ifelse(nchar(names(freq))<=60, names(freq), paste0(substr(names(freq), 1, 60), " ...")),
+    level = ifelse(nchar(names(freq)) <= 60, names(freq), paste0(substr(names(freq), 1, 60), " ...")),
     freq = freq
   )
   out$freq <- summary(x)
@@ -103,36 +85,17 @@ smry.factor <- function(x, digits = 2, x_name, ...) {
     out$valid_percent <- out$percent
   }
 
-  #Assign class and attributes
-  class(out) <- append("smry_cat", class(out))
-  attr(out, "x") <- list()
-  attr(out, "x")$name <- x_name
-  attr(out, "x")$levels <- rownames(out)
-
-  attr(out, "format") <- list()
-  attr(out, "format")$digits <- digits[[1]] * c(rep(0, 3), rep(1, ncol(out) - 3))
+  # output
+  digits <- digits[[1]] * c(rep(0, 3), rep(1, ncol(out) - 3))
   printed_names <- names(out)
   printed_names <- gsub("freq", "n", printed_names)
   printed_names <- gsub("percent", "\\%", printed_names)
   printed_names <- gsub("_", " ", printed_names)
-  attr(out, "format")$printed_names <- printed_names
+  out <- format_df(out, printed_names = list(NULL, printed_names), digits = digits)
   return(out)
 }
 
-# printed format
-print.smry_cat <- function(obj, ...) {
-  x_name <- attr(obj, "x")$name
-  x_levels <- attr(obj, "x")$levels
-  digits <- attr(obj, "format")$digits
-  printed_names <- attr(obj, "format")$printed_names
 
-  out <- obj
-  out[] <- lapply(1:ncol(out), function(i) roundf(out[, i], digits = digits[i], format = TRUE))
-  out <- rbind(printed_names, as.matrix(out))
-  dimnames(out) <- list(rep("", nrow(out)), rep("", ncol(out)))
-  out[grepl("^\\s*NA\\s*$", out)] <- ""
-  print(noquote(out))
-}
 
 
 #================================#
